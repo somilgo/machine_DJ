@@ -115,7 +115,7 @@ single = True
 Xbins = []
 Xlabels = []
 
-use_pickle = True
+use_pickle = False
 if use_pickle:
 	_, samplerate, _ = get_sample_freqs(file, sample_size)
 	frqs = get_freqs(samplerate, sample_size)
