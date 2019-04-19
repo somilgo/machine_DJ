@@ -7,8 +7,10 @@ from pydub import AudioSegment
 import soundfile as sf
 import os
 import pickle
-from sklearn.cluster import KMeans
+	from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
+import librosa
+from adversary.feature_extraction import get_mfcc_features
 
 
 def get_wav(au_file):
@@ -32,6 +34,11 @@ def get_freqs(samplerate, data_length):
 	frqs = k/T
 
 	return frqs
+
+def get_tempo(file):
+	seq, samplerate = sf.read(file)
+	bpm = librosa.beat.tempo(seq, sr = samplerate)
+	return bpm
 
 def list_files(dir):
 	r = []
@@ -113,6 +120,7 @@ genre_count = 5
 single = True
 
 Xbins = []
+mfccs = []
 Xlabels = []
 
 use_pickle = False
@@ -147,7 +155,10 @@ else :
 	for directory in next(os.walk(root_directory))[1][:genre_count]:
 		
 		dir_bins = []
+		beat_tot = []
+
 		for filename in os.listdir(directory)[:50]:
+
 			fourier, samplerate, data_length = get_sample_freqs(directory + "/" + filename, sample_size)
 			fouriers.append(fourier)
 			frqs = get_freqs(samplerate, sample_size)
@@ -155,7 +166,13 @@ else :
 			#bins = bins / np.linalg.norm(bins)
 			dir_bins.append(bins)
 			Xbins.append(bins)
+			data, samplerate = sf.read(directory + "/" + filename)
+			mfcc = get_mfcc_features(data, samplerate)
+			mfcc_np = npa = np.asarray(mfcc, dtype=np.float32)
+			mfcc_np_ave = np.mean(mfcc_np, axis=1)
+			mfccs.append(mfcc_np_ave)
 			Xlabels.append(filename)
+			#beat_tot.append(get_tempo(directory + "/" + filename))
 
 		plt.figure(dir_num)
 		plt.title(directory)
@@ -170,6 +187,9 @@ if not use_pickle:
 
 	pkl_file= open("results/" + str(sample_size) + "labels" + '.txt','wb')
 	pickle.dump(Xlabels,pkl_file)
+
+klabels = kmeans(mfccs, n = genre_count)
+print(purity(Xlabels, klabels))
 
 klabels = kmeans(Xbins, n = genre_count)
 print(purity(Xlabels, klabels))
